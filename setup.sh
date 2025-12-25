@@ -45,7 +45,7 @@ if [ "\$1" == "--help" ] || [ "\$1" == "-h" ] || [ -z "\$1" ]; then
     echo "  ./run.sh video.mp4 --target_lang en --translator ollama"
     exit 0
 fi
-python $(pwd)/autodub_v4_1.py "\$@"
+python $(pwd)/autodub.py "\$@"
 EOF
 
 chmod +x run.sh
