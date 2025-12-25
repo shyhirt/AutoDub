@@ -4,7 +4,7 @@ AutoDub - Automatic Video Translation and Dubbing Tool
 Transcribes, translates, and dubs videos using AI
 """
 
-import sys, os, asyncio, subprocess, argparse
+import sys, os, asyncio, subprocess, argparse, requests, json
 import whisper, pysrt, edge_tts
 from deep_translator import GoogleTranslator
 from datetime import timedelta
@@ -53,6 +53,26 @@ def format_timestamp(seconds):
     """Convert seconds to SRT timestamp format"""
     td = timedelta(seconds=seconds)
     return f"{td.seconds//3600:02}:{(td.seconds//60)%60:02}:{td.seconds%60:02},{td.microseconds//1000:03}"
+
+def translate_ollama(text, target_lang, model_name):
+    """Translate text using local Ollama instance"""
+    url = "http://localhost:11434/api/generate"
+    prompt = f"Translate the following text to language code '{target_lang}'. Output ONLY the translated text without any explanations or quotes: {text}"
+    
+    payload = {
+        "model": model_name,
+        "prompt": prompt,
+        "stream": False
+    }
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        if response.status_code == 200:
+            return response.json().get('response', text).strip()
+        return text
+    except Exception as e:
+        print(f"\n⚠️ Ollama error: {e}. Falling back to original text.")
+        return text
 
 def generate_xtts(subs, ref_wav, lang, concat_list, temp_files):
     """Generate speech using XTTS voice cloning"""
@@ -116,8 +136,7 @@ async def main():
         epilog="""
 Examples:
   %(prog)s video.mp4                                    # Dub to Russian with Edge TTS
-  %(prog)s video.mp4 --target_lang en                   # Dub to English
-  %(prog)s video.mp4 --tts silero --silero_voice baya   # Use Silero TTS
+  %(prog)s video.mp4 --translator ollama --ollama_model llama3 # Use Ollama for translation
   %(prog)s video.mp4 --tts xtts --ref_voice voice.wav   # Clone voice with XTTS
         """
     )
@@ -126,6 +145,10 @@ Examples:
                        help="TTS engine (default: edge)")
     parser.add_argument("--target_lang", default="ru",
                        help="Target language code (default: ru)")
+    parser.add_argument("--translator", choices=["google", "ollama"], default="google",
+                       help="Translation engine (default: google)")
+    parser.add_argument("--ollama_model", default="llama3",
+                       help="Ollama model to use (default: llama3)")
     parser.add_argument("--silero_voice", default="aidar",
                        choices=["aidar", "baya", "kseniya", "xenia", "eugene"],
                        help="Silero voice for Russian (default: aidar)")
@@ -155,10 +178,13 @@ Examples:
     result = model.transcribe(audio_wav, fp16=False)
     
     # 3. Translate
-    print("[3/5] Translating...")
+    print(f"[3/5] Translating with {args.translator.upper()}...")
     with open(srt_file, "w", encoding="utf-8") as f:
         for i, seg in enumerate(tqdm(result["segments"])):
-            translated = GoogleTranslator(source='auto', target=args.target_lang).translate(seg['text'])
+            if args.translator == "ollama":
+                translated = translate_ollama(seg['text'], args.target_lang, args.ollama_model)
+            else:
+                translated = GoogleTranslator(source='auto', target=args.target_lang).translate(seg['text'])
             f.write(f"{i+1}\n{format_timestamp(seg['start'])} --> {format_timestamp(seg['end'])}\n{translated}\n\n")
     
     # 4. Synthesize speech
