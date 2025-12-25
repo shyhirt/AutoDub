@@ -1,3 +1,4 @@
+
 # AutoDub - Automatic Video Translation & Dubbing
 
 Automatically transcribe, translate, and dub videos into different languages using AI-powered text-to-speech.
@@ -7,9 +8,9 @@ Automatically transcribe, translate, and dub videos into different languages usi
 - 🎙️ **Speech Recognition**: Transcribe audio using OpenAI Whisper
 - 🌍 **Translation**: Translate to 100+ languages via Google Translate
 - 🗣️ **Three TTS Engines**:
-  - **Edge TTS**: High-quality Microsoft voices (recommended)
-  - **Silero**: Fast Russian TTS (offline after first download)
-  - **XTTS**: Voice cloning from 6-10 second samples
+    - **Edge TTS**: High-quality Microsoft voices (recommended)
+    - **Silero**: Fast Russian TTS (offline after first download)
+    - **XTTS**: Voice cloning from 6-10 second samples
 - 🎬 **Video Preservation**: Keeps original video, mixes original audio (20%) with dubbed audio (150%)
 - 📝 **Subtitle Generation**: Creates SRT files for translated text
 
@@ -18,10 +19,10 @@ Automatically transcribe, translate, and dub videos into different languages usi
 ### System Dependencies
 ```bash
 # Fedora/RHEL
-sudo dnf install ffmpeg python3-devel
+sudo dnf install ffmpeg python3.10 python3.10-devel
 
 # Ubuntu/Debian
-sudo apt install ffmpeg python3-dev
+sudo apt install ffmpeg python3.10 python3.10-devel
 
 # macOS
 brew install ffmpeg
@@ -36,7 +37,40 @@ pip install openai-whisper pysrt edge-tts deep-translator soundfile tqdm
 pip install TTS  # Only needed for XTTS voice cloning
 ```
 
+##  Local Translation with Ollama (Optional)
+
+AutoDub now supports fully offline translation using **Ollama**. This is ideal for privacy, avoiding API limits, and achieving more context-aware translations.
+
+### 1. Install Ollama
+**For Linux (Fedora/Ubuntu/etc.):**
+```bash
+curl -fsSL [https://ollama.com/install.sh](https://ollama.com/install.sh) | sh
+ollama pull llama3
+````
+
 ## Quick Start
+
+Here is the concise guide on how to get started using your setup.sh script, formatted in Markdown:
+🚀 Quick Start Guide
+
+Follow these three steps to set up and start dubbing your videos:
+1. Prepare Files
+
+Ensure you have the following files in your project directory:
+
+    setup.sh (The installer)
+
+    autodub_v4_1.py (The main engine)
+
+    install.txt (List of dependencies)
+
+2. Run Installation
+
+Open your terminal in the project folder and execute:
+```Bash
+
+chmod +x setup.sh && ./setup.sh
+````
 
 ### Basic Usage (Edge TTS - Recommended)
 ```bash
@@ -60,11 +94,20 @@ python autodub.py video.mp4 --tts silero --silero_voice xenia
 
 # Available voices: aidar, baya, kseniya, xenia, eugene
 ```
-
 ### XTTS Voice Cloning (Most Natural)
 ```bash
 # Requires 6-10 second clean voice sample
 python autodub.py video.mp4 --tts xtts --ref_voice my_voice.wav --target_lang en
+```
+
+### Ollama translator
+
+```bash
+# Use Ollama with default llama3 model
+./run.sh video.mp4 --translator ollama
+
+# Use a specific model (e.g., Mistral)
+./run.sh video.mp4 --translator ollama --ollama_model mistral 
 ```
 
 ## Command-Line Options
@@ -134,6 +177,21 @@ Use CPU mode or reduce video length. For long videos, split into segments.
 
 ### Poor voice quality with Silero
 Use Edge TTS or XTTS instead. Silero is designed for speed, not quality.
+
+### Ollama Integration Features
+
+1. **Privacy**: Your transcripts and translations never leave your local machine.
+2. **Custom Context**: LLMs can handle nuances, slang, and technical terms better than basic translators.
+3. **Cost**: 100% free with no character limits or subscription fees.
+4. **Offline Workflow**: Combined with Silero or XTTS, you can dub videos without an active internet connection.
+
+| Feature   | Google Translate       | Ollama (Local LLM)        |
+|-----------|------------------------|---------------------------|
+| Speed     | Instant                | Depends on your GPU/RAM   |
+| Setup     | Zero setup             | Requires model download  |
+| Internet | Required               | Not required              |
+| Quality   | Literal / Standard     | Contextual / Natural      |
+
 
 ## Technical Details
 
