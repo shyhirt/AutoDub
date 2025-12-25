@@ -1,0 +1,10 @@
+openai-whisper
+edge-tts
+pysrt
+deep-translator
+tqdm
+requests
+torch
+torchaudio
+omegaconf
+transformers<4.40
