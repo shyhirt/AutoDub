@@ -277,20 +277,32 @@ def generate_piper(subs, model_path: Path, concat_list: list, temp_files: list,
     logging.info(f"✓ Generated {generated_count}/{len(subs)} segments")
 
 async def get_edge_voice(lang_code: str, emotion: Optional[str] = None) -> Tuple[str, bool]:
-    """Get best voice for language with emotion support check"""
+    """Prefer hu-HU-TamasNeural, fallback to any suitable voice"""
     try:
         voices = await edge_tts.VoicesManager.create()
         suitable = voices.find(Locale=lang_code)
-        if not suitable:
-            suitable = [v for v in voices.voices if v['Locale'].startswith(lang_code[:2])]
 
-        if suitable:
+        if not suitable:
+            suitable = [v for v in voices.voices if v["Locale"].startswith(lang_code[:2])]
+
+        # 1 Prefer Hungarian Tamas explicitly
+        if lang_code.lower().startswith("hu"):
             for voice in suitable:
-                if 'StyleList' in voice and voice['StyleList']:
-                    return voice['Name'], True
-            return suitable[0]['Name'], False
+                if voice.get("Name") == "hu-HU-TamasNeural":
+                    return voice["Name"], bool(voice.get("StyleList"))
+
+        # 2 Any voice with emotion/styles
+        for voice in suitable:
+            if voice.get("StyleList"):
+                return voice["Name"], True
+
+        # 3️ Any suitable voice
+        if suitable:
+            return suitable[0]["Name"], False
+
     except Exception as e:
         print(f"⚠️ Voice search error: {e}")
+
     return "en-US-ChristopherNeural", False
 
 def format_timestamp(seconds: float) -> str:
